@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:lazerpay_assessment/screens/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ravenpay_assessment/screens/home_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

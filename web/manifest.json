@@ -1,6 +1,6 @@
 {
-    "name": "lazerpay_assessment",
-    "short_name": "lazerpay_assessment",
+    "name": "ravenpay_assessment",
+    "short_name": "ravenpay_assessment",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

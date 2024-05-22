@@ -1,10 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:lazerpay_assessment/models/candle_stick.dart';
+import 'package:ravenpay_assessment/models/candle_stick.dart';
+import 'package:ravenpay_assessment/models/order.dart';
+import 'package:ravenpay_assessment/models/price_history.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ApiServices {
   // ignore: constant_identifier_names
   static const BASE_URL = 'https://api.binance.com/api/v3/klines';
+
+  Future<OrderBook> getOrderBookData() async {
+    final uri = Uri.parse('https://api.binance.com/api/v3/depth').replace(
+      queryParameters: {
+        'symbol': 'BTCUSDT',
+        'limit': '10',
+      },
+    );
+    final response = await http.get(uri);
+    final body = response.body;
+    final mkk = OrderBook.fromJson(jsonDecode(body));
+    // for (var ask in mkk.asks) {
+    //   print(ask);
+    // }
+    // for (var bid in mkk.bids) {
+    //   print(bid);
+    // }
+    return mkk;
+  }
 
   Future<PriceHistory> getData({
     String? symbol,
@@ -13,7 +35,6 @@ class ApiServices {
     DateTime? startTime,
     DateTime? endTime,
   }) async {
-
     final params = {
       'symbol': symbol ?? 'BTCUSDT',
       'interval': interval,
@@ -38,6 +59,28 @@ class ApiServices {
     }
   }
 }
+
+class RealTimeKlineHandler {
+  final WebSocketChannel channel;
+  final Function(CandleStick) onKlineClose;
+
+  RealTimeKlineHandler({required this.channel, required this.onKlineClose}) {
+    channel.stream.listen(
+      (message) {
+        final Map<String, dynamic> data = jsonDecode(message);
+        final kline = data['k'];
+        // print(kline);
+
+        if (kline['x'] == true) {
+          onKlineClose(
+            CandleStick.fromJson(kline),
+          );
+        }
+      },
+    );
+  }
+}
+
 
 
   // Future List<Map<String, dynamic>> binanceResponseMap(List<dynamic> binanceData) {

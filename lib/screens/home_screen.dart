@@ -1,25 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lazerpay_assessment/api_services.dart';
-import 'package:lazerpay_assessment/widgets/buy_sell_modal_sheet.dart';
-import 'package:lazerpay_assessment/widgets/chart.dart';
+import 'package:ravenpay_assessment/api_services.dart';
+import 'package:ravenpay_assessment/notifiers/current_timeframe_notifier.dart';
+import 'package:ravenpay_assessment/notifiers/pice_history_notifier.dart';
+import 'package:ravenpay_assessment/widgets/buy_sell_modal_sheet.dart';
+import 'package:ravenpay_assessment/widgets/chart.dart';
+import 'package:ravenpay_assessment/widgets/order_book.dart';
+import 'package:ravenpay_assessment/widgets/recent_trades.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String _currentView = 'Charts';
+  late Future<void> _loadInitialPriceHistory;
+
   void _showBuySellBottomModalSheet() {
     showModalBottomSheet(
-      
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => const BuySellModalSheet(),
     );
+  }
+
+  @override
+  void initState() {
+    _loadInitialPriceHistory =
+        ref.read(priceHistoryNotifier.notifier).updateState(
+              ref.read(currentTimeframeNotifier),
+            );
+    super.initState();
   }
 
   @override
@@ -244,12 +260,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          setState(() {
+                            _currentView = 'Charts';
+                          });
+                        },
                         child: Container(
                           width: 110,
                           height: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 38, 41, 50),
+                            color: _currentView == 'Charts'
+                                ? const Color.fromARGB(255, 38, 41, 50)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Center(
@@ -265,12 +287,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          setState(() {
+                            _currentView = 'Orderbook';
+                          });
+                        },
                         child: Container(
                           width: 110,
                           height: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 38, 41, 50),
+                            color: _currentView == 'Orderbook'
+                                ? const Color.fromARGB(255, 38, 41, 50)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Center(
@@ -286,12 +314,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          setState(() {
+                            _currentView = 'Recent trades';
+                          });
+                        },
                         child: Container(
                           width: 110,
                           height: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 38, 41, 50),
+                            color: _currentView == 'Recent trades'
+                                ? const Color.fromARGB(255, 38, 41, 50)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Center(
@@ -311,48 +345,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const TimeFrameSelector(),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      decoration: const ShapeDecoration(
-                        shape: StadiumBorder(),
-                        color: Color.fromARGB(255, 53, 57, 69),
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: 8.0,
-                          horizontal: 16,
-                        ),
-                        child: Text(
-                          'Trading view',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Gap(8),
-                  const Text(
-                    'Depth',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      color: Color.fromARGB(255, 167, 177, 188),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Chart(),
+            
+            if (_currentView == 'Charts')
+              FutureBuilder(
+                  future: _loadInitialPriceHistory,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text('An error Occurred'),
+                      );
+                    }
+                    return const Chart();
+                  }),
+            if (_currentView == 'Orderbook') const OrderBookWidget(),
+            if (_currentView == 'Recent trades') const RecentTrades(),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Container(
@@ -392,10 +403,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Gap(20),
                         GestureDetector(
                           onTap: () async {
-                            final fafa = await ApiServices().getData(
-                                symbol: 'BTCUSDT', interval: '1h', limit: 5);
-                            print(fafa.candleStickHistory);
-                            print(fafa.candleStickHistory.length);
+                            await ApiServices().getOrderBookData();
+                            // print(fafa);
                           },
                           child: Container(
                             width: 110,
@@ -489,6 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+            Spacer(),
             Container(
               color: const Color.fromARGB(255, 38, 41, 50),
               padding: const EdgeInsets.all(16),
@@ -549,153 +559,6 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           ],
         ),
-      ),
-    );
-  }
-}
-
-class TimeFrameChips extends StatelessWidget {
-  const TimeFrameChips({
-    super.key,
-    required this.text,
-    required this.onTap,
-    required this.selectedTimeframe,
-  });
-  final String text;
-  final void Function(String text) onTap;
-  final String selectedTimeframe;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onTap(text),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 6,
-          horizontal: 12,
-        ),
-        decoration: ShapeDecoration(
-          color: selectedTimeframe == text
-              ? const Color.fromARGB(255, 85, 92, 99)
-              : Colors.transparent,
-          shape: const StadiumBorder(),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            color: Color.fromARGB(255, 167, 177, 188),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class TimeFrameSelector extends StatefulWidget {
-  const TimeFrameSelector({
-    super.key,
-  });
-
-  @override
-  State<TimeFrameSelector> createState() => _TimeFrameSelectorState();
-}
-
-class _TimeFrameSelectorState extends State<TimeFrameSelector> {
-  String selectedTimeframe = '1H';
-  List<String> timeFrames = ['1H', '2H', '4H', '1D', '1W', '1M'];
-
-  void _setTimeframe(String timeframe) {
-    setState(() {
-      selectedTimeframe = timeframe;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          const Text(
-            'Time',
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: Color.fromARGB(255, 167, 177, 188),
-            ),
-          ),
-          for (final timeFrame in timeFrames)
-            TimeFrameChips(
-              text: timeFrame,
-              onTap: _setTimeframe,
-              selectedTimeframe: selectedTimeframe,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class WebsocketDemo extends StatefulWidget {
-  const WebsocketDemo({super.key});
-
-  @override
-  State<WebsocketDemo> createState() => _WebsocketDemoState();
-}
-
-class _WebsocketDemoState extends State<WebsocketDemo> {
-  String btcUsdtPrice = "0";
-  // final channel = IOWebSocketChannel.connect(
-  //     'wss://stream.binance.com:9443/ws/btcusdt@trade');
-  @override
-  void initState() {
-    super.initState();
-    // streamListener();
-  }
-
-  // streamListener() {
-  //   channel.stream.listen((message) {
-  //     print(message);
-  //     // channel.sink.add('received!');
-  //     // channel.sink.close(status.goingAway);
-  //     Map getData = jsonDecode(message);
-  //     print(getData);
-  //     setState(() {
-  //       btcUsdtPrice = getData['p'];
-  //     });
-  //     // print(getData['p']);
-  //   });
-  // }
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "BTC/USDT Pricnne",
-            style: GoogleFonts.inter(
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              btcUsdtPrice,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromARGB(255, 250, 194, 25),
-                  fontSize: 30),
-            ),
-          ),
-        ],
       ),
     );
   }

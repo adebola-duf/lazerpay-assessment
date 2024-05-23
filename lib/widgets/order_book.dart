@@ -47,17 +47,18 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                 children: [
                   const Spacer(),
                   IconButton(
-                      onPressed: _refreshOrderBookData,
-                      icon: const Icon(Icons.refresh),),
+                    onPressed: _refreshOrderBookData,
+                    icon: const Icon(Icons.refresh),
+                  ),
                 ],
               ),
               const Gap(10),
               Table(children: const [
                 TableRow(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 17.0),
-                      child: TableCell(
+                    TableCell(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 17.0),
                         child: Center(
                           child: Text(
                             'Price\n(USDT)',
@@ -71,9 +72,9 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 17.0),
-                      child: TableCell(
+                    TableCell(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 17.0),
                         child: Center(
                           child: Text(
                             'Amount\n(BTC)',
@@ -87,9 +88,9 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 17.0),
-                      child: TableCell(
+                    TableCell(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 17.0),
                         child: Center(
                           child: Text(
                             'Total',
@@ -123,9 +124,9 @@ class OrderTableCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 17.0),
-      child: TableCell(
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 17.0),
         child: Center(
           child: Text(
             value,

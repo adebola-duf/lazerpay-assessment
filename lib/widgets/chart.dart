@@ -278,7 +278,7 @@ class _MainChartState extends State<MainChart> {
               closeValueMapper: (CandleStick sales, _) => sales.close,
               animationDuration: 55,
               onPointTap: (pointInteractionDetails) =>
-                  print(pointInteractionDetails),
+                  print('fafafaafgfuau $pointInteractionDetails'),
             ),
           ],
         ),

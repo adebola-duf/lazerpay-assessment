@@ -18,14 +18,7 @@ class ApiServices {
     );
     final response = await http.get(uri);
     final body = response.body;
-    final mkk = OrderBook.fromJson(jsonDecode(body));
-    // for (var ask in mkk.asks) {
-    //   print(ask);
-    // }
-    // for (var bid in mkk.bids) {
-    //   print(bid);
-    // }
-    return mkk;
+    return OrderBook.fromJson(jsonDecode(body));
   }
 
   Future<PriceHistory> getData({

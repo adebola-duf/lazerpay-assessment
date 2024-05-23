@@ -17,8 +17,6 @@ class Chart extends ConsumerStatefulWidget {
 }
 
 class _ChartState extends ConsumerState<Chart> {
-  late TrackballBehavior candleStickChartTrackballBehaviour;
-  late CrosshairBehavior _crosshairBehaviour;
   WebSocketChannel? _channel;
   String? currentOpenPrice;
   String? currentClosePrice;
@@ -28,24 +26,6 @@ class _ChartState extends ConsumerState<Chart> {
   @override
   void initState() {
     _initWebSocket(ref.read(currentTimeframeNotifier));
-
-    candleStickChartTrackballBehaviour = TrackballBehavior(
-      enable: true,
-      // shouldAlwaysShow: true,
-      activationMode: ActivationMode.singleTap,
-      // tooltipSettings: const InteractiveTooltip(
-      //   format: 'point.x : point.y',
-      // ),
-    );
-
-    _crosshairBehaviour = CrosshairBehavior(
-      // shouldAlwaysShow: true,
-      enable: true,
-
-      lineType: CrosshairLineType.both,
-      lineDashArray: [5, 5],
-      activationMode: ActivationMode.singleTap,
-    );
     super.initState();
   }
 
@@ -68,13 +48,6 @@ class _ChartState extends ConsumerState<Chart> {
   Widget build(BuildContext context) {
     _initWebSocket(ref.watch(currentTimeframeNotifier));
     final priceHistoryData = ref.watch(priceHistoryNotifier).candleStickHistory;
-
-    final minPrice = priceHistoryData
-        .map((candle) => candle.low)
-        .reduce((a, b) => a < b ? a : b);
-    final maxPrice = priceHistoryData
-        .map((candle) => candle.high)
-        .reduce((a, b) => a > b ? a : b);
 
     return Column(
       children: [
@@ -119,7 +92,6 @@ class _ChartState extends ConsumerState<Chart> {
             ],
           ),
         ),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 27.67),
           child: SingleChildScrollView(
@@ -217,9 +189,64 @@ class _ChartState extends ConsumerState<Chart> {
             ),
           ),
         ),
+        MainChart(
+          dataSource: priceHistoryData,
+          key: ValueKey(priceHistoryData[0].openTime),
+        ),
+      ],
+    );
+  }
+}
+
+class MainChart extends StatefulWidget {
+  const MainChart({
+    super.key,
+    required this.dataSource,
+  });
+
+  final List<CandleStick> dataSource;
+
+  @override
+  State<MainChart> createState() => _MainChartState();
+}
+
+class _MainChartState extends State<MainChart> {
+  late TrackballBehavior candleStickChartTrackballBehaviour;
+  late CrosshairBehavior _crosshairBehaviour;
+
+  @override
+  void initState() {
+    candleStickChartTrackballBehaviour = TrackballBehavior(
+      enable: true,
+      // shouldAlwaysShow: true,
+      activationMode: ActivationMode.singleTap,
+      // tooltipSettings: const InteractiveTooltip(
+      //   format: 'point.x : point.y',
+      // ),
+    );
+
+    _crosshairBehaviour = CrosshairBehavior(
+      // shouldAlwaysShow: true,
+      enable: true,
+
+      lineType: CrosshairLineType.both,
+      lineDashArray: [5, 5],
+      activationMode: ActivationMode.singleTap,
+    );
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minPrice = widget.dataSource
+        .map((candle) => candle.low)
+        .reduce((a, b) => a < b ? a : b);
+    final maxPrice = widget.dataSource
+        .map((candle) => candle.high)
+        .reduce((a, b) => a > b ? a : b);
+    return Column(
+      children: [
         SfCartesianChart(
-          // key: ValueKey(priceHistoryData[0].openTime),
-          // onChartTouchInteractionUp: (args) => print(args.position.dx),
           crosshairBehavior: _crosshairBehaviour,
           trackballBehavior: candleStickChartTrackballBehaviour,
           zoomPanBehavior: ZoomPanBehavior(
@@ -238,7 +265,7 @@ class _ChartState extends ConsumerState<Chart> {
           ),
           series: <CartesianSeries>[
             CandleSeries<CandleStick, dynamic>(
-              dataSource: ref.watch(priceHistoryNotifier).candleStickHistory,
+              dataSource: widget.dataSource,
               enableSolidCandles: true,
               enableTooltip: true,
               bullColor: Colors.green,
@@ -255,33 +282,6 @@ class _ChartState extends ConsumerState<Chart> {
             ),
           ],
         ),
-        // SfCartesianChart(
-        //   key:ValueKey( priceHistoryData[0].openTime),
-        //   primaryXAxis: const DateTimeAxis(
-        //     majorGridLines: MajorGridLines(width: 0),
-        //   ),
-        //   primaryYAxis: const NumericAxis(
-        //     opposedPosition: true,
-        //     majorGridLines: MajorGridLines(width: 0),
-        //     title: AxisTitle(text: 'Price'),
-        //   ),
-        //   series: <CandleSeries>[
-        //     CandleSeries<CandleStick, DateTime>(
-        //       onRendererCreated: (ChartSeriesController controller) {
-        //         _chartSeriesController = controller;
-        //       },
-        //       dataSource: priceHistoryData,
-        //       xValueMapper: (CandleStick sales, _) =>
-        //           DateTime.fromMillisecondsSinceEpoch(sales.openTime),
-        //       lowValueMapper: (CandleStick sales, _) => sales.low,
-        //       highValueMapper: (CandleStick sales, _) => sales.high,
-        //       openValueMapper: (CandleStick sales, _) => sales.open,
-        //       closeValueMapper: (CandleStick sales, _) => sales.close,
-        //       bullColor: Colors.green,
-        //       bearColor: Colors.red,
-        //     ),
-        //   ],
-        // ),
         SfCartesianChart(
           trackballBehavior: candleStickChartTrackballBehaviour,
           zoomPanBehavior: ZoomPanBehavior(
@@ -301,7 +301,7 @@ class _ChartState extends ConsumerState<Chart> {
           ),
           series: <CartesianSeries>[
             ColumnSeries<CandleStick, DateTime>(
-              dataSource: priceHistoryData,
+              dataSource: widget.dataSource,
               xValueMapper: (CandleStick sales, _) =>
                   DateTime.fromMillisecondsSinceEpoch(sales.openTime),
               yValueMapper: (CandleStick sales, _) => sales.volume,

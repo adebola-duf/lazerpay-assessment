@@ -345,6 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
+            
             if (_currentView == 'Charts')
               FutureBuilder(
                   future: _loadInitialPriceHistory,
@@ -497,6 +498,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
+            Spacer(),
             Container(
               color: const Color.fromARGB(255, 38, 41, 50),
               padding: const EdgeInsets.all(16),
